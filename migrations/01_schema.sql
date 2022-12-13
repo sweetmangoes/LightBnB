@@ -30,7 +30,7 @@ CREATE TABLE properties(
 );
 
 CREATE TABLE reservations(
-  id INTERGER PRIMARY KEY NOT NULL, 
+  id INTEGER PRIMARY KEY NOT NULL, 
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   property_id INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE, 
