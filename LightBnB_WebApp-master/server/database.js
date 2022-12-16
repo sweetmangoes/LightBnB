@@ -29,7 +29,6 @@ const getUserWithEmail = (options, limit = 1) => {
   `;
 
   const data = [`${options}`];
-  console.log(`data: `, data);
 
   return pool
     .query(queryString, data)
@@ -50,6 +49,7 @@ exports.getUserWithEmail = getUserWithEmail;
 */
 
 const getUserWithId = (options, limit = 1) => {
+
   const queryString = `
     Select * 
     FROM users
@@ -102,9 +102,52 @@ exports.addUser = addUser;
  * Get all reservations for a single user.
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
- */
-const getAllReservations = function (guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+*/
+
+/*
+get user with reservations:    1 | Devin Sanders        | tristanjacobs@gmail.com
+guest_id: that basically the user.id which is I guess to be the cookie. 
+
+use this query has a template:
+SELECT reservations.id, properties.title, properties.cost_per_night, reservations.start_date, avg(rating) as average_rating
+FROM reservations
+JOIN properties ON reservations.property_id = properties.id
+JOIN property_reviews ON properties.id = property_reviews.property_id
+WHERE reservations.guest_id = 1
+GROUP BY properties.id, reservations.id
+ORDER BY reservations.start_date
+LIMIT 10;
+*/
+
+const getAllReservations = (options, limit = 1) => {
+  const queryString = `
+    SELECT reservations.id, properties.title, properties.cost_per_night, 
+    reservations.start_date,
+    properties.thumbnail_photo_url, 
+    properties.number_of_bathrooms, 
+    properties.number_of_bedrooms,
+    properties.parking_spaces,
+    AVG(rating) as average_rating
+    FROM reservations
+    JOIN properties ON reservations.property_id = properties.id
+    JOIN property_reviews ON properties.id = property_reviews.property_id
+    WHERE reservations.guest_id = $1
+    GROUP BY properties.id, reservations.id
+    ORDER BY reservations.start_date
+    LIMIT 10;
+  `;
+
+  const data = [`${options}`];
+
+  return pool
+    .query(queryString, data)
+    .then((result) => {
+      console.log(result.rows); 
+      return result.rows;
+    })
+    .catch((err) => {
+      return err.message; 
+    });
 };
 exports.getAllReservations = getAllReservations;
 
