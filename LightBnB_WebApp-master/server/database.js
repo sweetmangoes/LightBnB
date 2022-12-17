@@ -256,11 +256,37 @@ exports.getAllProperties = getAllProperties;
  * Add a property to the database
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
+ * 
+ * sample query:
+ * INSERT INTO properties (owner_id, title, description, thumbnail_photo_url, cover_photo_url, cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, country, street, city, province, post_code, active)
+VALUES (1, 'title', 'description', 'https:thumbnail', 'https:cover', 1, 1, 1, 1, 'Canada', 'orleans', 'ottawa', 'ON', '1231ps', true)
+RETURNING *; 
+
+ * 
  */
-const addProperty = function (property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+const addProperty = function(options, limit = 1){
+console.log(options); 
+
+const queryString = `
+INSERT INTO properties (owner_id, title, description, thumbnail_photo_url, cover_photo_url, cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, country, street, city, province, post_code, active)
+VALUES ('${options.owner_id}', '${options.title}', '${options.description}', '${options.thumbnail_photo_url}', '${options.cover_photo_url}', '${options.cost_per_night}', '${options.parking_spaces}', '${options.number_of_bathrooms}', '${options.number_of_bedrooms}', '${options.country}', '${options.street}', '${options.city}', '${options.province}', '${options.post_code}', true)
+RETURNING *; 
+`;
+console.log('queryString',queryString)
+return pool.query(queryString)
+.then((res) => {
+  console.log(`correct: `, res.rows)
+  return res.rows
+})
+.catch((err) => {
+  console.log(`error`, err)
+  return err.message; 
+});
 };
+// const addProperty = function (property) ${options.
+//   const propertyId = Object.keys(properties).length + 1;
+//   property.id = propertyId;
+//   properties[propertyId] = property;
+//   return Promise.resolve(property);
+// };
 exports.addProperty = addProperty;
