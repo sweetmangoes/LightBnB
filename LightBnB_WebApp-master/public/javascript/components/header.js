@@ -7,7 +7,7 @@ $(() => {
     currentUser = user;
     $pageHeader.find("#page-header__user-links").remove();
     let userLinks;
-
+    console.log(`user: `, user); 
     if (!user) {
       userLinks = `
       <nav id="page-header__user-links" class="page-header__user-links">
