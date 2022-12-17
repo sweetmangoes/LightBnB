@@ -1,5 +1,8 @@
 # LightBnB
 
+## Introduction 
+A simple multi-page AirBnB that uses a server-side Javascript to display the information from queries to web pages via sQL queries. 
+
 ## Project Structure
 
 ```
