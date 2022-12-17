@@ -19,7 +19,7 @@ pool.query(`SELECT title FROM properties LIMIT 10;`).then((response) => {
  * Get a single user from the database given their email.
  * @param {String} email The email of the user.
  * @return {Promise<{}>} A promise to the user.
-*/
+ */
 
 const getUserWithEmail = (options, limit = 1) => {
   const queryString = `
@@ -36,7 +36,7 @@ const getUserWithEmail = (options, limit = 1) => {
       return result.rows[0];
     })
     .catch((err) => {
-      return err.message; 
+      return err.message;
     });
 };
 
@@ -46,17 +46,16 @@ exports.getUserWithEmail = getUserWithEmail;
  * Get a single user from the database given their id.
  * @param {string} id The id of the user.
  * @return {Promise<{}>} A promise to the user.
-*/
+ */
 
 const getUserWithId = (options, limit = 1) => {
-
   const queryString = `
     Select * 
     FROM users
     WHERE id = $1; 
   `;
 
-  const data = [`${options}`]
+  const data = [`${options}`];
 
   return pool
     .query(queryString, data)
@@ -64,7 +63,7 @@ const getUserWithId = (options, limit = 1) => {
       return result.rows;
     })
     .catch((err) => {
-      return err.message; 
+      return err.message;
     });
 };
 
@@ -74,7 +73,7 @@ exports.getUserWithId = getUserWithId;
  * Add a new user to the database.
  * @param {{name: string, password: string, email: string}} user
  * @return {Promise<{}>} A promise to the user.
-*/
+ */
 
 const addUser = (options, limit = 1) => {
   const queryString = `
@@ -90,7 +89,7 @@ const addUser = (options, limit = 1) => {
       return result.rows;
     })
     .catch((err) => {
-      return err.message; 
+      return err.message;
     });
 };
 
@@ -102,7 +101,7 @@ exports.addUser = addUser;
  * Get all reservations for a single user.
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
-*/
+ */
 
 const getAllReservations = (options, limit = 1) => {
   const queryString = `
@@ -127,11 +126,11 @@ const getAllReservations = (options, limit = 1) => {
   return pool
     .query(queryString, data)
     .then((result) => {
-      console.log(result.rows); 
+      console.log(result.rows);
       return result.rows;
     })
     .catch((err) => {
-      return err.message; 
+      return err.message;
     });
 };
 exports.getAllReservations = getAllReservations;
@@ -143,43 +142,11 @@ exports.getAllReservations = getAllReservations;
  * @param {{}} options An object containing query options.
  * @param {*} limit The number of results to return.
  * @return {Promise<[{}]>}  A promise to the properties.
-*/
-
-/*
-
-Query works:  
-// QUERYSTRING
-SELECT city, owner_id, properties.id, title, cost_per_night, 
-AVG(property_reviews.rating) as average_rating
-FROM properties
-LEFT JOIN property_reviews ON properties.id = property_id
-WHERE
-
-//CONDITIONAL ARRAY
-properties.owner_id = 69 
-AND city LIKE '%o%' 
-AND cost_per_night >= 1
-AND cost_per_night <= 9000
-
-GROUP BY properties.id
-HAVING avg(property_reviews.rating) >= 3
-
-ORDER BY cost_per_night
-LIMIT 10;
-
-
-challenge: 
-- if an owner_id is passed in, only return properties belonging to that owner.
-- if a minimum_price_per_night and a maximum_price_per_night, only return properties within that price range. (HINT: The database stores amounts in cents, not dollars!)
-- if a minimum_rating is passed in, only return properties with a rating equal to or higher than that.
-*/
+ */
 
 const getAllProperties = function (options, limit = 10) {
-  
-  // const queryParams = [];
-  const conditionsArray = []; 
+  const conditionsArray = [];
 
-  // 2
   let queryString = `
     SELECT city, owner_id, properties.id, title, 
     cost_per_night, avg(property_reviews.rating) as average_rating,
@@ -191,43 +158,42 @@ const getAllProperties = function (options, limit = 10) {
     LEFT JOIN property_reviews ON properties.id = property_id
   `;
 
-  
   // owner_id - if an owner_id is passed in, only return properties belonging to that owner.
-  if(options.owner_id){
+  if (options.owner_id) {
     conditionsArray.push(`properties.owner_id = ${options.owner_id}`);
   }
-  
-  // city - 
+
+  // city - if a city is passed in, only return properties belonging to that city.
   if (options.city) {
-    conditionsArray.push(`city LIKE '%${options.city}%'`)
-    // queryString += `WHERE city LIKE $${queryParams.length} `; // AFTER CONDITIONS ARRAY
+    conditionsArray.push(`city LIKE '%${options.city}%'`);
   }
-  
-  // Minimum price
+
+  // Minimum price - if an min price is passed in, only return properties belonging to that min price.
   if (options.minimum_price_per_night) {
-    conditionsArray.push(`cost_per_night >= ${options.minimum_price_per_night * 100}`);
-    // queryString += `WHERE city LIKE $${queryParams.length} `;
+    conditionsArray.push(
+      `cost_per_night >= ${options.minimum_price_per_night * 100}`
+    );
   }
-  
-  // Maximum price - 
+
+  // Maximum price - if an max price is passed in, only return properties belonging to that max price.
   if (options.maximum_price_per_night) {
-    conditionsArray.push(`cost_per_night <= ${options.maximum_price_per_night * 100}`);
-    // queryString += `WHERE city LIKE $${queryParams.length} `;
+    conditionsArray.push(
+      `cost_per_night <= ${options.maximum_price_per_night * 100}`
+    );
   }
-  
-  // where check
-  if (conditionsArray.length > 0 ) {
-    queryString += `WHERE `
-    queryString +=  conditionsArray.join(' AND ');
+
+  // where - get added to the queryString and adds conditional array to the queryString joining it with And
+  if (conditionsArray.length > 0) {
+    queryString += `WHERE `;
+    queryString += conditionsArray.join(" AND ");
   }
-  
+
   queryString += `
   GROUP BY properties.id`;
-  
+
   // Minimum rating - if a minimum_rating is passed in, only return properties with a rating equal to or higher than that.
   if (options.minimum_rating) {
     queryString += ` HAVING avg(property_reviews.rating) >=${options.minimum_rating}`;
-    // queryString += `WHERE city LIKE $${queryParams.length} `;
   }
 
   queryString += `
@@ -235,18 +201,13 @@ const getAllProperties = function (options, limit = 10) {
   LIMIT ${limit};
   `;
 
-  // 5
-  console.log(`queryString; `, queryString);
-
-  console.log(`conditionalArray; `, conditionsArray);
-
-  // // 6
-  return pool.query(queryString)
+  return pool
+    .query(queryString)
     .then((res) => {
-      return res.rows
+      return res.rows;
     })
     .catch((err) => {
-      return err.message; 
+      return err.message;
     });
 };
 
@@ -256,37 +217,23 @@ exports.getAllProperties = getAllProperties;
  * Add a property to the database
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
- * 
- * sample query:
- * INSERT INTO properties (owner_id, title, description, thumbnail_photo_url, cover_photo_url, cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, country, street, city, province, post_code, active)
-VALUES (1, 'title', 'description', 'https:thumbnail', 'https:cover', 1, 1, 1, 1, 'Canada', 'orleans', 'ottawa', 'ON', '1231ps', true)
-RETURNING *; 
-
- * 
  */
-const addProperty = function(options, limit = 1){
-console.log(options); 
+const addProperty = function (options, limit = 1) {
+  const queryString = `
+    INSERT INTO properties (owner_id, title, description, thumbnail_photo_url, cover_photo_url, cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, country, street, city, province, post_code, active)VALUES ('${options.owner_id}', '${options.title}', '${options.description}', '${options.thumbnail_photo_url}', '${options.cover_photo_url}', '${options.cost_per_night}', '${options.parking_spaces}', '${options.number_of_bathrooms}', '${options.number_of_bedrooms}', '${options.country}', '${options.street}', '${options.city}', '${options.province}', '${options.post_code}', true)
+    RETURNING *; 
+  `;
 
-const queryString = `
-INSERT INTO properties (owner_id, title, description, thumbnail_photo_url, cover_photo_url, cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, country, street, city, province, post_code, active)
-VALUES ('${options.owner_id}', '${options.title}', '${options.description}', '${options.thumbnail_photo_url}', '${options.cover_photo_url}', '${options.cost_per_night}', '${options.parking_spaces}', '${options.number_of_bathrooms}', '${options.number_of_bedrooms}', '${options.country}', '${options.street}', '${options.city}', '${options.province}', '${options.post_code}', true)
-RETURNING *; 
-`;
-console.log('queryString',queryString)
-return pool.query(queryString)
-.then((res) => {
-  console.log(`correct: `, res.rows)
-  return res.rows
-})
-.catch((err) => {
-  console.log(`error`, err)
-  return err.message; 
-});
+  return pool
+    .query(queryString)
+    .then((res) => {
+      console.log(`correct: `, res.rows);
+      return res.rows;
+    })
+    .catch((err) => {
+      console.log(`error`, err);
+      return err.message;
+    });
 };
-// const addProperty = function (property) ${options.
-//   const propertyId = Object.keys(properties).length + 1;
-//   property.id = propertyId;
-//   properties[propertyId] = property;
-//   return Promise.resolve(property);
-// };
+
 exports.addProperty = addProperty;
