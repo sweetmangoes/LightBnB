@@ -162,8 +162,6 @@ AND cost_per_night >= 1
 AND cost_per_night <= 9000
 
 GROUP BY properties.id
-
-//CONDITIONAL ARRAY
 HAVING avg(property_reviews.rating) >= 3
 
 ORDER BY cost_per_night
@@ -184,56 +182,69 @@ const getAllProperties = function (options, limit = 10) {
   // 2
   let queryString = `
     SELECT city, owner_id, properties.id, title, 
-    cost_per_night, avg(property_reviews.rating) as average_rating
+    cost_per_night, avg(property_reviews.rating) as average_rating,
+    properties.thumbnail_photo_url, 
+    properties.number_of_bathrooms, 
+    properties.number_of_bedrooms,
+    properties.parking_spaces
     FROM properties
     LEFT JOIN property_reviews ON properties.id = property_id
-    WHERE 
   `;
 
-   // owner_id - if an owner_id is passed in, only return properties belonging to that owner.
-   if(options.owner_id){
+  
+  // owner_id - if an owner_id is passed in, only return properties belonging to that owner.
+  if(options.owner_id){
     conditionsArray.push(`properties.owner_id = ${options.owner_id}`);
-   }
-
+  }
+  
   // city - 
   if (options.city) {
-    conditionsArray.push(`city LIKE '%${options.city}%' `)
+    conditionsArray.push(`city LIKE '%${options.city}%'`)
     // queryString += `WHERE city LIKE $${queryParams.length} `; // AFTER CONDITIONS ARRAY
   }
-
+  
   // Minimum price
   if (options.minimum_price_per_night) {
-      conditionsArray.push(`cost_per_night >= ${options.minimum_price_per_night}`);
-      // queryString += `WHERE city LIKE $${queryParams.length} `;
-    }
-
+    conditionsArray.push(`cost_per_night >= ${options.minimum_price_per_night * 100}`);
+    // queryString += `WHERE city LIKE $${queryParams.length} `;
+  }
+  
   // Maximum price - 
   if (options.maximum_price_per_night) {
-    conditionsArray.push(`cost_per_night <= ${options.maximum_price_per_night}`);
+    conditionsArray.push(`cost_per_night <= ${options.maximum_price_per_night * 100}`);
     // queryString += `WHERE city LIKE $${queryParams.length} `;
   }
-
+  
+  // where check
+  if (conditionsArray.length > 0 ) {
+    queryString += `WHERE `
+    queryString +=  conditionsArray.join(' AND ');
+  }
+  
+  queryString += `
+  GROUP BY properties.id`;
+  
   // Minimum rating - if a minimum_rating is passed in, only return properties with a rating equal to or higher than that.
   if (options.minimum_rating) {
-    conditionsArray.push(`HAVING avg(property_reviews.rating) >=${options.minimum_rating}`);
+    queryString += ` HAVING avg(property_reviews.rating) >=${options.minimum_rating}`;
     // queryString += `WHERE city LIKE $${queryParams.length} `;
   }
 
-
-  // 4 -> End of string
-  queryParams.push(limit);
   queryString += `
-  GROUP BY properties.id
   ORDER BY cost_per_night
-  LIMIT $${queryParams.length};
+  LIMIT ${limit};
   `;
 
   // 5
-  console.log(queryString, queryParams);
+  console.log(`queryString; `, queryString);
 
-  // 6
-  return pool.query(queryString, queryParams)
-    .then((res) => res.rows)
+  console.log(`conditionalArray; `, conditionsArray);
+
+  // // 6
+  return pool.query(queryString)
+    .then((res) => {
+      return res.rows
+    })
     .catch((err) => {
       return err.message; 
     });
